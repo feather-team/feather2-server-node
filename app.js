@@ -15,10 +15,9 @@ app.use(cookieParser());
 
 var STATIC_ROOT = path.join(DOCUMENT_ROOT, 'static');
 
+app.use(require('./dev-tool.js')(DOCUMENT_ROOT, STATIC_ROOT));
 // 静态文件输出
 app.use(express.static(STATIC_ROOT));
-app.use(require('./rewrite.js')(DOCUMENT_ROOT, STATIC_ROOT));
-
 // utf8 support
 app.use(function(req, res, next) {
     // attach utf-8 encoding header to text files.
