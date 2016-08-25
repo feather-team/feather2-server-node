@@ -52,6 +52,12 @@ module.exports = function(root, static_root){
                     for(var key in rewrites){
                         if((new RegExp(key, 'i')).test(req.originalUrl)){
                             url = rewrites[key];
+
+                            if(typeof url == 'function'){
+                                url(req, res, next);
+                                return;
+                            }
+
                             break;
                         }
                     }
