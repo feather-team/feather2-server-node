@@ -17,5 +17,9 @@
   },
   "author": {
     "name": "jsyczhanghao@sina.com"
+  },
+    "repository": {
+    "type": "git",
+    "url": "git+https://github.com/feather-team/feather2-server-node.git"
   }
 }
