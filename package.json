@@ -1,6 +1,6 @@
 {
   "name": "feather2-server-node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "feather2 server node",
   "main": "index.js",
   "keywords": [
