@@ -71,14 +71,21 @@ module.exports = function(root, static_root){
 
             file = path.join(DOCUMENT_ROOT, url);
 
-            if(isFile(file)){
-                res.send(fs.readFileSync(file).toString()); 
-            }else if(url == '/'){
+            if(!isFile(file) && url == '/'){
                 file = path.join(DOCUMENT_ROOT, 'index.html');
+            }
 
-                if(isFile(file)){
-                    res.send(fs.readFileSync(file).toString()); 
+            if(isFile(file)){   
+                var content = fs.readFileSync(file).toString();
+
+                if(url.indexOf('pagelet/') > -1 && 'debug' in req.query){
+                    var mapFile = path.join(DOCUMENT_ROOT, 'map.json');
+                    var mapJson = JSON.parse(fs.readFileSync(mapFile));
+
+                    content = '<script src="' + mapJson['static/feather.js'].url + '"></script>' + content;
                 }
+                
+                res.send(content); 
             }
         }catch(e){
             res.status(500).send(e.message);
