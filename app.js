@@ -6,6 +6,13 @@ var path = require('path');
 var DOCUMENT_ROOT = path.resolve(/\-\-root\|(.*?)(?:\||$)/.test(args) ? RegExp.$1 : process.cwd());
 var bodyParser = require('body-parser'), cookieParser = require('cookie-parser');
 var app = express();
+var mustacheExpress = require('mustache-express');
+
+// Register '.mustache' extension with The Mustache Express
+app.engine('html', mustacheExpress());
+app.set('view engine', 'html');
+app.set('views', DOCUMENT_ROOT);
+app.disable('view cache');
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));

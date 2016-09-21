@@ -6,7 +6,18 @@ var exists = fs.existsSync || path.existsSync;
 
 function isFile(path){
     return exists(path) && fs.statSync(path).isFile(); 
-};
+}
+
+function getRefs(id, map){
+    var refs = [];
+
+    (map[id].refs || []).forEach(function(ref){
+        refs.push(ref);
+        refs.unshift.apply(refs, getRefs(ref, map));
+    });
+
+    return refs;
+}
 
 module.exports = function(root, static_root){
     DOCUMENT_ROOT = root;
@@ -45,8 +56,6 @@ module.exports = function(root, static_root){
 
         var rewrites, url = req.path || '/', file;
 
-        file = path.join(DOCUMENT_ROOT, url);
-
         try{
             //强制清除加载的文件，重新加载
             delete require.cache[REWRITE_FILE];
@@ -69,23 +78,47 @@ module.exports = function(root, static_root){
                 }
             }
 
-            file = path.join(DOCUMENT_ROOT, url);
+            file = path.join(DOCUMENT_ROOT, url).replace('.html', '') + '.html';
 
             if(!isFile(file) && url == '/'){
                 file = path.join(DOCUMENT_ROOT, 'index.html');
             }
 
-            if(isFile(file)){   
-                var content = fs.readFileSync(file).toString();
+            if(isFile(file)){  
+                var bContent = '', mapJson = JSON.parse(fs.readFileSync(path.join(DOCUMENT_ROOT, 'map.json')));
 
-                if(url.indexOf('pagelet/') > -1 && 'debug' in req.query){
-                    var mapFile = path.join(DOCUMENT_ROOT, 'map.json');
-                    var mapJson = JSON.parse(fs.readFileSync(mapFile));
-
-                    content = '<script src="' + mapJson['static/feather.js'].url + '"></script>' + content;
+                if(/pagelet[\/\\]/.test(file) && 'debug' in req.query){
+                    bContent = '<script src="' + mapJson['static/feather.js'].url + '"></script>';
                 }
-                
-                res.send(content); 
+
+                var id = path.relative(DOCUMENT_ROOT, file).replace(/\\+/g, '/');
+                var refs = ['_global_.html'].concat(getRefs(id, mapJson)), datas = {};
+
+                for(var i = 0; i < refs.length; i++){
+                    var dataFile = path.join(DOCUMENT_ROOT, 'data', refs[i].replace('.html', '.json'));
+
+                    if(isFile(dataFile)){
+                        try{
+                            var c = (fs.readFileSync(dataFile) || '').toString().trim();
+
+                            if(c){
+                                var data = JSON.parse(c) || {};
+
+                                for(var key in data){
+                                    datas[key] = data[key];
+                                }
+                            }
+                        }catch(e){
+                            return res.status(500).send(dataFile + ' is not a valid json file!')
+                        }
+                    }
+                }
+
+                res.render(file, datas, function(err, html){
+                    res.send(bContent + html);
+                });
+
+                return;
             }
         }catch(e){
             res.status(500).send(e.message);
