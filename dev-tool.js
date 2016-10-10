@@ -78,7 +78,17 @@ module.exports = function(root, static_root){
                 }
             }
 
-            file = path.join(DOCUMENT_ROOT, url).replace('.html', '') + '.html';
+
+            file = path.join(DOCUMENT_ROOT, url);
+
+            if(isFile(file) && !/\.html$/.test(file)){
+                res.sendFile(file, function(){
+                    next();
+                });
+                return;
+            }
+
+            file = file.replace('.html', '') + '.html';
 
             if(!isFile(file) && url == '/'){
                 file = path.join(DOCUMENT_ROOT, 'index.html');
