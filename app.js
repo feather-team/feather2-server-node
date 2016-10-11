@@ -5,13 +5,8 @@ var https = /\-\-https\|(true)(?:\||$)/.test(args) ? !!RegExp.$1 : false;
 var path = require('path');
 var DOCUMENT_ROOT = path.resolve(/\-\-root\|(.*?)(?:\||$)/.test(args) ? RegExp.$1 : process.cwd());
 var bodyParser = require('body-parser'), cookieParser = require('cookie-parser');
-var app = express();
-var mustacheExpress = require('mustache-express');
+var app = global.app = express();
 
-// Register '.mustache' extension with The Mustache Express
-app.engine('html', mustacheExpress());
-app.set('view engine', 'html');
-app.set('views', DOCUMENT_ROOT);
 app.disable('view cache');
 
 // parse application/x-www-form-urlencoded

@@ -26,14 +26,19 @@ module.exports = function(root, static_root){
     ENGINE_FILE = path.join(DOCUMENT_ROOT, 'conf/engine.json');
 
     router.use(function(req, res, next){
-        var config = JSON.parse(fs.readFileSync(ENGINE_FILE));
+        var ENGINE_CONFIG = JSON.parse(fs.readFileSync(ENGINE_FILE));
+        var mustacheExpress = require('mustache-express');
+        // Register '.mustache' extension with The Mustache Express
+        app.engine(ENGINE_CONFIG.suffix, mustacheExpress());
+        app.set('view engine', ENGINE_CONFIG.suffix);
+        app.set('views', DOCUMENT_ROOT);
 
-        if(config.combo && req.originalUrl.indexOf(config.combo.syntax[0]) == 1){
-            var combos = req.originalUrl.split(config.combo.syntax[0]);
+        if(ENGINE_CONFIG.combo && req.originalUrl.indexOf(ENGINE_CONFIG.combo.syntax[0]) == 1){
+            var combos = req.originalUrl.split(ENGINE_CONFIG.combo.syntax[0]);
 
             if(combos.length > 1){
                 //handle combo
-                combos = combos[1].split(config.combo.syntax[1]);
+                combos = combos[1].split(ENGINE_CONFIG.combo.syntax[1]);
 
                 var content = '';
 
@@ -81,17 +86,19 @@ module.exports = function(root, static_root){
 
             file = path.join(DOCUMENT_ROOT, url);
 
-            if(isFile(file) && !/\.html$/.test(file)){
+            var suffix = '.' + ENGINE_CONFIG.suffix;
+
+            if(isFile(file) && file.slice(-suffix.length) != suffix){
                 res.sendFile(file, function(){
                     next();
                 });
                 return;
             }
 
-            file = file.replace('.html', '') + '.html';
+            file = file.replace(suffix, '') + suffix;
 
             if(!isFile(file) && url == '/'){
-                file = path.join(DOCUMENT_ROOT, 'index.html');
+                file = path.join(DOCUMENT_ROOT, 'index' + suffix);
             }
 
             if(isFile(file)){  
@@ -101,33 +108,37 @@ module.exports = function(root, static_root){
                     bContent = '<script src="' + mapJson['static/feather.js'].url + '"></script>';
                 }
 
-                var id = path.relative(DOCUMENT_ROOT, file).replace(/\\+/g, '/');
-                var refs = ['_global_.html'].concat(getRefs(id, mapJson)), datas = {};
+                if(ENGINE_CONFIG.mustache){
+                    var id = path.relative(DOCUMENT_ROOT, file).replace(/\\+/g, '/');
+                    var refs = ['_global_' + suffix].concat(getRefs(id, mapJson)), datas = {};
 
-                for(var i = 0; i < refs.length; i++){
-                    var dataFile = path.join(DOCUMENT_ROOT, 'data', refs[i].replace('.html', '.json'));
+                    for(var i = 0; i < refs.length; i++){
+                        var dataFile = path.join(DOCUMENT_ROOT, 'data', refs[i].replace(suffix, '.json'));
 
-                    if(isFile(dataFile)){
-                        try{
-                            var c = (fs.readFileSync(dataFile) || '').toString().trim();
+                        if(isFile(dataFile)){
+                            try{
+                                var c = (fs.readFileSync(dataFile) || '').toString().trim();
 
-                            if(c){
-                                var data = JSON.parse(c) || {};
+                                if(c){
+                                    var data = JSON.parse(c) || {};
 
-                                for(var key in data){
-                                    datas[key] = data[key];
+                                    for(var key in data){
+                                        datas[key] = data[key];
+                                    }
                                 }
+                            }catch(e){
+                                return res.status(500).send(dataFile + ' is not a valid json file!')
                             }
-                        }catch(e){
-                            return res.status(500).send(dataFile + ' is not a valid json file!')
                         }
                     }
+
+                    res.render(file, datas, function(err, html){
+                        res.send(bContent + html);
+                    });
+                }else{
+                    res.send(bContent + fs.readFileSync(file).toString());
                 }
-
-                res.render(file, datas, function(err, html){
-                    res.send(bContent + html);
-                });
-
+                
                 return;
             }
         }catch(e){
