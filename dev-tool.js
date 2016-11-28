@@ -112,6 +112,8 @@ module.exports = function(root, static_root){
                     var id = path.relative(DOCUMENT_ROOT, file).replace(/\\+/g, '/');
                     var refs = ['_global_' + suffix].concat(getRefs(id, mapJson)), datas = {};
 
+                    refs.push(id.replace(suffix, '.json'));
+
                     for(var i = 0; i < refs.length; i++){
                         var dataFile = path.join(DOCUMENT_ROOT, 'data', refs[i].replace(suffix, '.json'));
 
