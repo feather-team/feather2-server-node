@@ -19,6 +19,14 @@ function getRefs(id, map){
     return refs;
 }
 
+function html5addMeta(content, isHtml5){
+    if(isHtml5 && content.indexOf('<meta name="viewport"') == -1){
+        content = '<meta name="viewport" content="initial-scale=1, maximum-scale= 1, minimum-scale=1, user-scalable=no">' + content;
+    }
+    
+    return content;
+}
+
 module.exports = function(root, static_root){
     DOCUMENT_ROOT = root;
     STATIC_ROOT = static_root;
@@ -135,10 +143,11 @@ module.exports = function(root, static_root){
                     }
 
                     res.render(file, datas, function(err, html){
-                        res.send(bContent + html);
+                        res.send(bContent + html5addMeta(html, 'h5debug' in req.query));
                     });
                 }else{
-                    res.send(bContent + fs.readFileSync(file).toString());
+                    var content = fs.readFileSync(file).toString();
+                    res.send(bContent + html5addMeta(content, 'h5debug' in req.query));
                 }
                 
                 return;
